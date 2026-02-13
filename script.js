@@ -1,55 +1,21 @@
 /**
- * VIDEO SLIDESHOW IMPLEMENTATION
- * 
- * This script creates an automated video slideshow with the following features:
- * - Smooth transitions between videos
- * - Responsive design (adapts to mobile/desktop)
- * - Error handling and retry logic
- * - Loading state management
- * - Performance optimizations
- * 
- * The general flow is:
- * 1. Configure videos and their sources
- * 2. Create video elements and add them to the page
- * 3. Handle loading states and errors
- * 4. Manage transitions between videos
- * 5. Handle window resizing and visibility changes
+ * NOMAD'E — Image + Video Slideshow
+ *
+ * Supports a mix of images and videos.
+ * Images display for 5 seconds each, videos play through fully.
+ * Smooth crossfade transitions between all slides.
  */
 
-// ====================================
-// VIDEO CONFIGURATION AND SETUP
-// ====================================
-
-// Define video sources and their variations
-const videos = [
-    {
-        src: 'https://player.vimeo.com/video/1066647564?h=abc123def&background=1&autoplay=1&loop=1&byline=0&title=0&muted=1&controls=0&quality=1080p&app_id=122963&playsinline=1&transparent=0',
-        title: 'Rose Video'
-    },
-    {
-        src: 'https://player.vimeo.com/video/1066647579?h=abc123def&background=1&autoplay=1&loop=1&byline=0&title=0&muted=1&controls=0&quality=1080p&app_id=122963&playsinline=1&transparent=0',
-        title: 'Maple Video'
-    },
-    {
-        src: 'https://player.vimeo.com/video/1066647592?h=abc123def&background=1&autoplay=1&loop=1&byline=0&title=0&muted=1&controls=0&quality=1080p&app_id=122963&playsinline=1&transparent=0',
-        title: 'ElPaso Video'
-    },
-    {
-        src: 'https://player.vimeo.com/video/1066647608?h=abc123def&background=1&autoplay=1&loop=1&byline=0&title=0&muted=1&controls=0&quality=1080p&app_id=122963&playsinline=1&transparent=0',
-        title: 'Voltaje Video'
-    }
+const media = [
+    { type: 'image', src: 'images/slideshow/figurine-earrings-closeup.jpg', alt: 'Silver figurine earrings close-up' },
+    { type: 'image', src: 'images/slideshow/figurine-earrings-floral.jpg', alt: 'Silver figurine earrings on flower stem' },
+    { type: 'image', src: 'images/slideshow/citrine-bracelet-oranges.jpg', alt: 'Silver chain bracelet with citrine crystals' },
+    { type: 'image', src: 'images/slideshow/figurine-earrings-kumquat.jpg', alt: 'Silver figurine earrings on kumquat' },
+    { type: 'image', src: 'images/slideshow/star-pin-ring-dark.jpg', alt: 'Silver safety pin ring with star' },
+    { type: 'video', src: 'https://www.dropbox.com/scl/fi/eabhye1epnldtjy2dylp9/NomadeLA_Earrings.mp4?rlkey=4s20pbt255dmkbs1oopyy5i2m&st=y5cf1yx7&dl=1' }
 ];
 
-// Detect if user is on a mobile device by checking screen size and user agent
-const isMobile = () => {
-    return window.matchMedia('(max-width: 768px)').matches || 
-           /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
-// Keep track of current mobile state
-let currentIsMobile = isMobile();
-
-// Shuffle array randomly (Fisher-Yates algorithm)
+// Shuffle array randomly (Fisher-Yates)
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -58,174 +24,124 @@ function shuffleArray(array) {
     return array;
 }
 
-// Randomize the order of videos for variety
-shuffleArray(videos);
-
-// ====================================
-// STATE MANAGEMENT
-// ====================================
+shuffleArray(media);
 
 const slideshowContainer = document.querySelector('.slideshow');
-let currentSlide = 0;          // Index of current video
-let slides = [];               // Array to store video elements
-let isTransitioning = false;   // Flag to prevent multiple transitions
+let currentSlide = 0;
+let slides = [];
+let slideTimer = null;
 
-// ====================================
-// VIDEO CREATION AND SETUP
-// ====================================
-
-// Create video elements for each video in the configuration
-videos.forEach((videoConfig, index) => {
-    // Create container for video
+// Create slide elements
+media.forEach((item, index) => {
     const slideDiv = document.createElement('div');
-    slideDiv.className = 'video-slide';
-    
-    // Create iframe for Vimeo player
-    const iframe = document.createElement('iframe');
-    iframe.src = videoConfig.src;
-    iframe.allow = 'autoplay; fullscreen';
-    iframe.loading = index === 0 ? 'eager' : 'lazy';
-    
-    // Set up slide visibility
+    slideDiv.className = 'slide';
+
+    if (item.type === 'image') {
+        const img = document.createElement('img');
+        img.src = item.src;
+        img.alt = item.alt || '';
+        img.loading = index === 0 ? 'eager' : 'lazy';
+        slideDiv.appendChild(img);
+    } else if (item.type === 'video') {
+        const video = document.createElement('video');
+        video.src = item.src;
+        video.muted = true;
+        video.playsInline = true;
+        video.loop = false;
+        video.preload = index === 0 ? 'auto' : 'metadata';
+        slideDiv.appendChild(video);
+    }
+
     if (index === 0) {
         slideDiv.classList.add('active');
     }
-    
-    // Add to DOM and store reference
-    slideDiv.appendChild(iframe);
+
     slideshowContainer.appendChild(slideDiv);
-    slides.push({ div: slideDiv, iframe: iframe });
+    slides.push({ div: slideDiv, config: item });
 });
 
-// ====================================
-// SLIDESHOW MANAGEMENT
-// ====================================
-
 /**
- * Handles transition between videos
+ * Advance to the next slide
  */
-function changeSlide() {
-    if (isTransitioning) return;
-    isTransitioning = true;
-    
-    // Track slide change in analytics
-    try {
-        window.plausible('slideChange', { 
-            props: { slideIndex: currentSlide }
-        });
-    } catch (e) {
-        console.error('Analytics error:', e);
+function nextSlide() {
+    clearTimeout(slideTimer);
+
+    const currentEl = slides[currentSlide];
+
+    // Pause video if leaving a video slide
+    if (currentEl.config.type === 'video') {
+        const video = currentEl.div.querySelector('video');
+        if (video) video.pause();
     }
-    
-    // Transition to next video
-    slides[currentSlide].div.classList.remove('active');
+
+    // Fade out current
+    currentEl.div.classList.remove('active');
+
+    // Advance index
     currentSlide = (currentSlide + 1) % slides.length;
-    slides[currentSlide].div.classList.add('active');
-    
-    isTransitioning = false;
+
+    const nextEl = slides[currentSlide];
+    nextEl.div.classList.add('active');
+
+    if (nextEl.config.type === 'video') {
+        const video = nextEl.div.querySelector('video');
+        if (video) {
+            video.currentTime = 0;
+            video.play().catch(() => {
+                // Video autoplay blocked — skip to next after 5s
+                slideTimer = setTimeout(nextSlide, 5000);
+            });
+        }
+    } else {
+        // Image: show for 5 seconds
+        slideTimer = setTimeout(nextSlide, 5000);
+    }
 }
-
-// Change slides every 10 seconds
-setInterval(changeSlide, 10000);
-
-// ====================================
-// RESPONSIVE HANDLING
-// ====================================
 
 /**
- * Debounce function to limit how often a function is called
+ * Start the slideshow
  */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+function startSlideshow() {
+    const first = slides[0];
 
-// Handle window resizing with debouncing for performance
-const debouncedResize = debounce(() => {
-    const newIsMobile = isMobile();
-    if (newIsMobile !== currentIsMobile) {
-        currentIsMobile = newIsMobile;
-    }
-}, 250);
-
-// Listen for window resize events
-window.addEventListener('resize', debouncedResize);
-
-// ====================================
-// VIDEO PROTECTION
-// ====================================
-
-// Create and initialize video slides
-function initializeVideoSlides() {
-    const slideshow = document.querySelector('.slideshow');
-    let activeSlide = null;
-
-    videos.forEach((videoConfig, index) => {
-        const slide = document.createElement('div');
-        slide.className = 'video-slide';
-        
-        const video = document.createElement('video');
-        video.playsInline = true;
-        video.muted = true;
-        video.loop = true;
-        
-        // Add video protection attributes
-        video.controlsList = 'nodownload nofullscreen noremoteplayback';
-        video.disablePictureInPicture = true;
-        video.disableRemotePlayback = true;
-        
-        slide.appendChild(video);
-        slideshow.appendChild(slide);
-
-        // Initialize HLS player for this video
-        initializeHLSPlayer(video, videoConfig);
-
-        // Make first slide active
-        if (index === 0) {
-            slide.classList.add('active');
-            activeSlide = slide;
+    if (first.config.type === 'video') {
+        const video = first.div.querySelector('video');
+        if (video) {
+            video.play().catch(() => {
+                slideTimer = setTimeout(nextSlide, 5000);
+            });
         }
-    });
-
-    return activeSlide;
-}
-
-// Handle video transitions
-function startVideoTransitions() {
-    const slides = document.querySelectorAll('.video-slide');
-    let currentIndex = 0;
-
-    setInterval(() => {
-        slides[currentIndex].classList.remove('active');
-        currentIndex = (currentIndex + 1) % slides.length;
-        slides[currentIndex].classList.add('active');
-    }, 8000);
-}
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const activeSlide = initializeVideoSlides();
-    if (activeSlide) {
-        startVideoTransitions();
+    } else {
+        slideTimer = setTimeout(nextSlide, 5000);
     }
+}
 
-    // Additional protection measures
-    document.addEventListener('keydown', (e) => {
-        // Prevent common video download shortcuts
-        if (
-            (e.key === 'S' && (e.ctrlKey || e.metaKey)) || // Save
-            (e.key === 'I' && (e.ctrlKey || e.metaKey)) || // Inspect
-            (e.key === 'U' && (e.ctrlKey || e.metaKey))    // View Source
-        ) {
-            e.preventDefault();
-            return false;
+// When a video ends, move to next slide
+document.addEventListener('ended', function(e) {
+    if (e.target.tagName === 'VIDEO') {
+        nextSlide();
+    }
+}, true);
+
+// Handle page visibility — pause/resume
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        clearTimeout(slideTimer);
+        const current = slides[currentSlide];
+        if (current.config.type === 'video') {
+            const video = current.div.querySelector('video');
+            if (video) video.pause();
         }
-    });
-}); 
+    } else {
+        const current = slides[currentSlide];
+        if (current.config.type === 'video') {
+            const video = current.div.querySelector('video');
+            if (video) video.play().catch(() => {});
+        } else {
+            slideTimer = setTimeout(nextSlide, 5000);
+        }
+    }
+});
+
+// Start when ready
+startSlideshow();

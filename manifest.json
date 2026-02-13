@@ -1,16 +1,16 @@
 {
-    "name": "CB - Creative Technology",
-    "short_name": "CB",
-    "description": "Creative technologist and digital artist exploring the intersection of art and technology.",
+    "name": "NOMAD'E Los Angeles",
+    "short_name": "NOMAD'E",
+    "description": "LA born handmade jewelry for the visionary individual.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#000000",
-    "theme_color": "#000000",
+    "background_color": "#0a0e1a",
+    "theme_color": "#0a0e1a",
     "icons": [
         {
-            "src": "/images/C_Logo_128px_white.png",
+            "src": "/images/nomade-logo.png",
             "sizes": "128x128",
             "type": "image/png"
         }
     ]
-} 
+}
