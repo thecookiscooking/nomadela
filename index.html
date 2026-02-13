@@ -154,6 +154,41 @@
             pointer-events: none;
         }
 
+        /* 80s grain/dither overlay — dense at edges, clear in center */
+        .grain-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 3;
+            pointer-events: none;
+            filter: url(#dither);
+            mask-image: radial-gradient(ellipse 40% 40% at center, transparent 0%, transparent 30%, black 100%);
+            -webkit-mask-image: radial-gradient(ellipse 40% 40% at center, transparent 0%, transparent 30%, black 100%);
+            background: rgba(10, 14, 26, 0.6);
+        }
+
+        /* Scanline effect for extra 80s feel */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 4;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 4px
+            );
+            mask-image: radial-gradient(ellipse 50% 50% at center, transparent 20%, black 100%);
+            -webkit-mask-image: radial-gradient(ellipse 50% 50% at center, transparent 20%, black 100%);
+        }
+
         /* Main Content Overlay */
         .content {
             position: relative;
@@ -398,6 +433,19 @@
     </style>
 </head>
 <body>
+    <!-- SVG Dither/Grain Filter -->
+    <svg style="position:absolute;width:0;height:0">
+        <filter id="dither">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" result="noise"/>
+            <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+            <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply"/>
+        </filter>
+    </svg>
+
+    <!-- Grain + scanline overlays -->
+    <div class="grain-overlay"></div>
+    <div class="scanlines"></div>
+
     <!-- Header Navigation -->
     <header class="header">
         <a href="#" class="logo">
