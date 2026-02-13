@@ -444,7 +444,7 @@
             const email = "contact@nomade.la";
             const button = event.currentTarget;
 
-            navigator.clipboard.writeText(email).then(() => {
+            function onCopied() {
                 const feedback = button.parentElement.querySelector('.copy-feedback');
                 button.classList.add('copied');
                 feedback.classList.add('show');
@@ -452,7 +452,25 @@
                     feedback.classList.remove('show');
                     button.classList.remove('copied');
                 }, 2000);
-            });
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(email).then(onCopied).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                const textarea = document.createElement('textarea');
+                textarea.value = email;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                onCopied();
+            }
         }
 
         document.addEventListener('click', function(event) {
