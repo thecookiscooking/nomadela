@@ -28,10 +28,15 @@ shuffleArray(media);
 
 // Tagline rotation — synced with slide transitions
 const taglines = [
-    'LA born handmade jewelry for the visionary individual',
-    'High-quality craftsmanship meets a creative soul'
+    { desktop: 'LA born handmade jewelry for the visionary individual', mobile: 'LA born handmade jewelry<br>for the visionary individual' },
+    { desktop: 'High-quality craftsmanship meets a creative soul', mobile: 'High-quality craftsmanship<br>meets a creative soul' }
 ];
 let currentTagline = 0;
+
+function getTagline(index) {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    return isMobile ? taglines[index].mobile : taglines[index].desktop;
+}
 
 function cycleTagline() {
     const el = document.querySelector('.tagline');
@@ -39,9 +44,9 @@ function cycleTagline() {
     el.classList.add('fade-out');
     setTimeout(() => {
         currentTagline = (currentTagline + 1) % taglines.length;
-        el.textContent = taglines[currentTagline];
+        el.innerHTML = getTagline(currentTagline);
         el.classList.remove('fade-out');
-    }, 2000); // swap text halfway through the slide crossfade
+    }, 2000);
 }
 
 const slideshowContainer = document.querySelector('.slideshow');
