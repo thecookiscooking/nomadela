@@ -175,12 +175,18 @@
             filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
         }
 
-        .content p {
+        .content .tagline {
             font-size: 18px;
             letter-spacing: 2px;
             text-transform: none;
             color: rgba(192, 200, 220, 0.8);
             text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+            transition: opacity 2s ease-in-out;
+            opacity: 1;
+        }
+
+        .content .tagline.fade-out {
+            opacity: 0;
         }
 
         /* Modal Styles */
@@ -425,7 +431,7 @@
     <!-- Main Content Overlay -->
     <div class="content">
         <img src="images/nomade-logo.png" alt="NOMAD'E Los Angeles" class="brand-logo">
-        <p>LA born handmade jewelry for the visionary individual</p>
+        <p class="tagline">LA born handmade jewelry for the visionary individual</p>
     </div>
 
     <!-- Scripts -->

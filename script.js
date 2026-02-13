@@ -26,6 +26,24 @@ function shuffleArray(array) {
 
 shuffleArray(media);
 
+// Tagline rotation — synced with slide transitions
+const taglines = [
+    'LA born handmade jewelry for the visionary individual',
+    'High-quality craftsmanship meets a creative soul'
+];
+let currentTagline = 0;
+
+function cycleTagline() {
+    const el = document.querySelector('.tagline');
+    if (!el) return;
+    el.classList.add('fade-out');
+    setTimeout(() => {
+        currentTagline = (currentTagline + 1) % taglines.length;
+        el.textContent = taglines[currentTagline];
+        el.classList.remove('fade-out');
+    }, 2000); // swap text halfway through the slide crossfade
+}
+
 const slideshowContainer = document.querySelector('.slideshow');
 let currentSlide = 0;
 let slides = [];
@@ -74,7 +92,8 @@ function nextSlide() {
         if (video) video.pause();
     }
 
-    // Fade out current
+    // Fade out current slide and tagline together
+    cycleTagline();
     currentEl.div.classList.remove('active');
 
     // Advance index
